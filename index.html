@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facial Expression Recognition | AI Powered</title>
+    <meta name="description"
+        content="Real-time facial expression recognition using AI. Show emotions like happy, sad, angry and see them detected instantly.">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="background-gradient"></div>
+
+    <div class="container">
+        <header class="header">
+            <h1 class="title">
+                <span class="emoji">🤖</span>
+                Facial Expression Recognition
+            </h1>
+            <p class="subtitle">Show your emotions and watch the AI detect them in real-time</p>
+        </header>
+
+        <main class="main-content">
+            <!-- Camera Section -->
+            <div class="camera-section">
+                <div class="camera-container" id="cameraContainer">
+                    <video id="webcam" autoplay playsinline></video>
+                    <canvas id="canvas"></canvas>
+
+                    <!-- Loading State -->
+                    <div class="loading-overlay" id="loadingOverlay">
+                        <div class="loading-spinner"></div>
+                        <p class="loading-text">Initializing Camera & AI Model...</p>
+                    </div>
+
+                    <!-- Error State -->
+                    <div class="error-overlay hidden" id="errorOverlay">
+                        <div class="error-icon">⚠️</div>
+                        <p class="error-text" id="errorText">Camera access denied</p>
+                        <button class="retry-btn" id="retryBtn">Retry</button>
+                    </div>
+                </div>
+
+                <!-- Gesture Display -->
+                <div class="gesture-display" id="gestureDisplay">
+                    <div class="gesture-label" id="gestureLabel">
+                        <span class="gesture-emoji" id="gestureEmoji">😊</span>
+                        <span class="gesture-text" id="gestureText">Show your face</span>
+                    </div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" id="confidenceFill"></div>
+                    </div>
+                    <p class="confidence-text" id="confidenceText">Confidence: 0%</p>
+                </div>
+            </div>
+
+
+        </main>
+
+        <footer class="footer">
+            <p>Powered by MediaPipe Face Mesh • Real-time AI Detection</p>
+        </footer>
+    </div>
+
+    <!-- MediaPipe Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+
+    <!-- App Script -->
+    <script src="script.js"></script>
+</body>
+
+</html>
