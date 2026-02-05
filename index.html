@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Facial Expression Recognition | AI Powered</title>
+    <title>Hand Shake & Gesture Recognition | AI Powered</title>
     <meta name="description"
-        content="Real-time facial expression recognition using AI. Show emotions like happy, sad, angry and see them detected instantly.">
+        content="Real-time hand gesture recognition using AI. Detects hand shakes, open hands, fists, and more.">
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,10 +21,10 @@
     <div class="container">
         <header class="header">
             <h1 class="title">
-                <span class="emoji">🤖</span>
-                Facial Expression Recognition
+                <span class="emoji">🤝</span>
+                Hand Shake Recognition
             </h1>
-            <p class="subtitle">Show your emotions and watch the AI detect them in real-time</p>
+            <p class="subtitle">Show a Hand Shake or other gestures to the camera</p>
         </header>
 
         <main class="main-content">
@@ -37,7 +37,7 @@
                     <!-- Loading State -->
                     <div class="loading-overlay" id="loadingOverlay">
                         <div class="loading-spinner"></div>
-                        <p class="loading-text">Initializing Camera & AI Model...</p>
+                        <p class="loading-text">Initializing Hand Tracking...</p>
                     </div>
 
                     <!-- Error State -->
@@ -51,13 +51,10 @@
                 <!-- Gesture Display -->
                 <div class="gesture-display" id="gestureDisplay">
                     <div class="gesture-label" id="gestureLabel">
-                        <span class="gesture-emoji" id="gestureEmoji">😊</span>
-                        <span class="gesture-text" id="gestureText">Show your face</span>
+                        <span class="gesture-emoji" id="gestureEmoji">👋</span>
+                        <span class="gesture-text" id="gestureText">Show your hands</span>
                     </div>
-                    <div class="confidence-bar">
-                        <div class="confidence-fill" id="confidenceFill"></div>
-                    </div>
-                    <p class="confidence-text" id="confidenceText">Confidence: 0%</p>
+                    <!-- Confidence bar removed as it varies by gesture logic, kept simple for now -->
                 </div>
             </div>
 
@@ -65,7 +62,7 @@
         </main>
 
         <footer class="footer">
-            <p>Powered by MediaPipe Face Mesh • Real-time AI Detection</p>
+            <p>Powered by MediaPipe Hands • Real-time AI Detection</p>
         </footer>
     </div>
 
@@ -75,7 +72,7 @@
         crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"
         crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
     <!-- App Script -->
     <script src="script.js"></script>

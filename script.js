@@ -8,25 +8,24 @@ const errorText = document.getElementById('errorText');
 const retryBtn = document.getElementById('retryBtn');
 const gestureEmoji = document.getElementById('gestureEmoji');
 const gestureText = document.getElementById('gestureText');
-const confidenceFill = document.getElementById('confidenceFill');
-const confidenceText = document.getElementById('confidenceText');
 
 // State
-let faceMesh;
+let hands;
 let camera;
-let currentExpression = null;
-let expressionConfidence = 0;
+let currentGesture = null;
 
-// Expression Definitions
-const EXPRESSIONS = {
-    HAPPY: { name: 'Happy', emoji: '😊' },
-    SAD: { name: 'Sad', emoji: '😢' },
-    ANGRY: { name: 'Angry', emoji: '😠' },
-    SURPRISED: { name: 'Surprised', emoji: '😮' },
-    NEUTRAL: { name: 'Neutral', emoji: '😐' },
-    DISGUSTED: { name: 'Disgusted', emoji: '🤢' },
-    FEARFUL: { name: 'Fearful', emoji: '😨' },
-    NONE: { name: 'Show your face', emoji: '😊' }
+// Gesture Definitions
+const GESTURES = {
+    HAND_SHAKE: { name: 'Hand Shake', emoji: '🤝' },
+    THUMBS_UP: { name: 'Thumbs Up', emoji: '👍' },
+    VICTORY: { name: 'Victory / Two', emoji: '✌️' },
+    ONE: { name: 'One', emoji: '1️⃣' },
+    THREE: { name: 'Three', emoji: '3️⃣' },
+    FOUR: { name: 'Four', emoji: '4️⃣' },
+    FIVE: { name: 'High Five / Open Hand', emoji: '👋' },
+    CLOSED_FIST: { name: 'Closed Fist', emoji: '✊' },
+    POINTING: { name: 'Pointing', emoji: '☝️' },
+    NONE: { name: 'Show your hands', emoji: '👋' }
 };
 
 // Initialize the app
@@ -70,26 +69,26 @@ async function setupCamera() {
     }
 }
 
-// Setup MediaPipe Face Mesh
+// Setup MediaPipe Hands
 async function setupMediaPipe() {
-    faceMesh = new FaceMesh({
+    hands = new Hands({
         locateFile: (file) => {
-            return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
         }
     });
 
-    faceMesh.setOptions({
-        maxNumFaces: 1,
-        refineLandmarks: true,
+    hands.setOptions({
+        maxNumHands: 2,
+        modelComplexity: 1,
         minDetectionConfidence: 0.5,
         minTrackingConfidence: 0.5
     });
 
-    faceMesh.onResults(onResults);
+    hands.onResults(onResults);
 
     camera = new Camera(video, {
         onFrame: async () => {
-            await faceMesh.send({ image: video });
+            await hands.send({ image: video });
         },
         width: 1280,
         height: 720
@@ -108,150 +107,122 @@ function onResults(results) {
     canvasCtx.save();
     canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
-        const landmarks = results.multiFaceLandmarks[0];
+    // Draw Hands
+    if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        for (const landmarks of results.multiHandLandmarks) {
+            drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {
+                color: '#00f2fe',
+                lineWidth: 5
+            });
+            drawLandmarks(canvasCtx, landmarks, {
+                color: '#ffffff',
+                lineWidth: 2,
+                radius: 3
+            });
+        }
 
-        // Draw face mesh (optional - comment out if you don't want the mesh)
-        drawConnectors(canvasCtx, landmarks, FACEMESH_TESSELATION, {
-            color: '#00f2fe20',
-            lineWidth: 1
-        });
-
-        // Draw key facial features
-        drawConnectors(canvasCtx, landmarks, FACEMESH_RIGHT_EYE, {
-            color: '#667eea',
-            lineWidth: 2
-        });
-        drawConnectors(canvasCtx, landmarks, FACEMESH_LEFT_EYE, {
-            color: '#667eea',
-            lineWidth: 2
-        });
-        drawConnectors(canvasCtx, landmarks, FACEMESH_LIPS, {
-            color: '#f093fb',
-            lineWidth: 2
-        });
-
-        // Detect expression
-        const expression = detectExpression(landmarks);
-        updateExpressionDisplay(expression);
+        // Detect Gestures
+        const gesture = detectGesture(results.multiHandLandmarks);
+        updateGestureDisplay(gesture);
     } else {
-        // No face detected
-        updateExpressionDisplay(EXPRESSIONS.NONE);
+        updateGestureDisplay(GESTURES.NONE);
     }
 
     canvasCtx.restore();
 }
 
-// Detect facial expression from landmarks
-function detectExpression(landmarks) {
-    // Key landmark indices for expression detection
-    const leftEyeTop = landmarks[159];
-    const leftEyeBottom = landmarks[145];
-    const rightEyeTop = landmarks[386];
-    const rightEyeBottom = landmarks[374];
+// Detect Gesture
+function detectGesture(landmarksList) {
+    // 1. Check for Hand Shake (Two hands close together)
+    if (landmarksList.length === 2) {
+        const hand1 = landmarksList[0];
+        const hand2 = landmarksList[1];
 
-    const leftMouth = landmarks[61];
-    const rightMouth = landmarks[291];
-    const topLip = landmarks[13];
-    const bottomLip = landmarks[14];
+        // Calculate distance between wrist of hand1 and wrist of hand2
+        const dist = Math.hypot(hand1[0].x - hand2[0].x, hand1[0].y - hand2[0].y);
 
-    const leftEyebrowInner = landmarks[70];
-    const leftEyebrowOuter = landmarks[46];
-    const rightEyebrowInner = landmarks[300];
-    const rightEyebrowOuter = landmarks[276];
-
-    const noseTip = landmarks[1];
-    const foreheadCenter = landmarks[10];
-
-    // Calculate metrics
-    const leftEyeOpenness = Math.abs(leftEyeTop.y - leftEyeBottom.y);
-    const rightEyeOpenness = Math.abs(rightEyeTop.y - rightEyeBottom.y);
-    const avgEyeOpenness = (leftEyeOpenness + rightEyeOpenness) / 2;
-
-    const mouthWidth = Math.abs(leftMouth.x - rightMouth.x);
-    const mouthHeight = Math.abs(topLip.y - bottomLip.y);
-    const mouthAspectRatio = mouthHeight / mouthWidth;
-
-    const leftEyebrowHeight = leftEyebrowInner.y - noseTip.y;
-    const rightEyebrowHeight = rightEyebrowInner.y - noseTip.y;
-    const avgEyebrowHeight = (leftEyebrowHeight + rightEyebrowHeight) / 2;
-
-    // Eyebrow angle (for anger detection)
-    const leftEyebrowAngle = leftEyebrowOuter.y - leftEyebrowInner.y;
-    const rightEyebrowAngle = rightEyebrowOuter.y - rightEyebrowInner.y;
-
-    // Expression detection logic
-
-    // HAPPY: Mouth corners up, eyes slightly closed
-    if (mouthAspectRatio > 0.15 && mouthWidth > 0.15 && avgEyeOpenness < 0.03) {
-        return { ...EXPRESSIONS.HAPPY, confidence: 90 };
+        // If hands are close (threshold 0.3 depending on scale), assume shake
+        if (dist < 0.25) {
+            return GESTURES.HAND_SHAKE;
+        }
     }
 
-    // SURPRISED: Eyes wide open, mouth open
-    if (avgEyeOpenness > 0.04 && mouthAspectRatio > 0.2) {
-        return { ...EXPRESSIONS.SURPRISED, confidence: 90 };
+    // 2. Check Single Hand Gestures (Use the first detected hand)
+    const landmarks = landmarksList[0];
+
+    // Check which fingers are extended
+    const tips = [8, 12, 16, 20]; // Index, Middle, Ring, Pinky
+    const pips = [6, 10, 14, 18]; // Lower joints
+
+    // Check thumb extension (simplified vector check)
+    // distance from Index MCP [5] to Thumb Tip [4]
+    const thumbDist = Math.hypot(landmarks[4].x - landmarks[5].x, landmarks[4].y - landmarks[5].y);
+    const isThumbExtended = thumbDist > 0.1; // approximate threshold
+
+    let fingersUp = isThumbExtended ? 1 : 0;
+
+    // Check other 4 fingers
+    for (let i = 0; i < 4; i++) {
+        // If tip is higher (lower Y value) than PIP joint, it's extended
+        if (landmarks[tips[i]].y < landmarks[pips[i]].y) {
+            fingersUp++;
+        }
     }
 
-    // SAD: Mouth corners down, eyebrows down
-    if (mouthAspectRatio < 0.08 && avgEyebrowHeight > -0.05) {
-        return { ...EXPRESSIONS.SAD, confidence: 85 };
+    // -- Classification --
+
+    // Thumbs Up: Only thumb extended, others curled
+    const indexDown = landmarks[8].y > landmarks[6].y;
+    const middleDown = landmarks[12].y > landmarks[10].y;
+    const ringDown = landmarks[16].y > landmarks[14].y;
+    const pinkyDown = landmarks[20].y > landmarks[18].y;
+
+    // Strict Thumbs Up check
+    // Thumb tip above wrist [0] and other fingers down
+    if (isThumbExtended && indexDown && middleDown && ringDown && pinkyDown && landmarks[4].y < landmarks[0].y) {
+        return GESTURES.THUMBS_UP;
     }
 
-    // ANGRY: Eyebrows furrowed (inner down, outer up), mouth tight
-    if (leftEyebrowAngle < -0.01 && rightEyebrowAngle > 0.01 && mouthAspectRatio < 0.1) {
-        return { ...EXPRESSIONS.ANGRY, confidence: 85 };
+    // Counts
+    if (fingersUp === 0) return GESTURES.CLOSED_FIST;
+
+    if (fingersUp === 1) {
+        // If index is the one up
+        if (!indexDown) return GESTURES.POINTING; // or ONE
+        return GESTURES.ONE;
     }
 
-    // DISGUSTED: Nose wrinkled, upper lip raised
-    if (topLip.y < noseTip.y + 0.02 && mouthAspectRatio < 0.12) {
-        return { ...EXPRESSIONS.DISGUSTED, confidence: 80 };
+    if (fingersUp === 2) {
+        // Victory: Index and Middle
+        if (!indexDown && !middleDown) {
+            return GESTURES.VICTORY;
+        }
     }
 
-    // FEARFUL: Eyes wide, eyebrows raised, mouth slightly open
-    if (avgEyeOpenness > 0.035 && avgEyebrowHeight < -0.08 && mouthAspectRatio > 0.12) {
-        return { ...EXPRESSIONS.FEARFUL, confidence: 80 };
-    }
+    if (fingersUp === 3) return GESTURES.THREE;
+    if (fingersUp === 4) return GESTURES.FOUR;
+    if (fingersUp === 5) return GESTURES.FIVE;
 
-    // NEUTRAL: Default expression
-    if (mouthAspectRatio < 0.15 && avgEyeOpenness > 0.02 && avgEyeOpenness < 0.04) {
-        return { ...EXPRESSIONS.NEUTRAL, confidence: 75 };
-    }
-
-    // If no clear expression, return neutral with lower confidence
-    return { ...EXPRESSIONS.NEUTRAL, confidence: 60 };
+    return GESTURES.NONE;
 }
 
 // Update Expression Display
-function updateExpressionDisplay(expression) {
-    if (!expression || expression.name === currentExpression) {
+function updateGestureDisplay(gesture) {
+    if (!gesture || (currentGesture && gesture.name === currentGesture.name)) {
         return;
     }
 
-    currentExpression = expression.name;
-    expressionConfidence = expression.confidence || 0;
+    currentGesture = gesture;
 
     // Update emoji with animation
     gestureEmoji.style.animation = 'none';
     setTimeout(() => {
-        gestureEmoji.textContent = expression.emoji;
+        gestureEmoji.textContent = gesture.emoji;
         gestureEmoji.style.animation = 'bounceIn 0.5s ease';
     }, 10);
 
     // Update text
-    gestureText.textContent = expression.name;
-
-    // Update confidence bar
-    confidenceFill.style.width = `${expressionConfidence}%`;
-    confidenceText.textContent = `Confidence: ${expressionConfidence}%`;
-
-    // Change confidence bar color based on level
-    if (expressionConfidence >= 80) {
-        confidenceFill.style.background = 'linear-gradient(135deg, #10b981 0%, #14b8a6 100%)';
-    } else if (expressionConfidence >= 50) {
-        confidenceFill.style.background = 'linear-gradient(135deg, #f59e0b 0%, #f97316 100%)';
-    } else {
-        confidenceFill.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-    }
+    gestureText.textContent = gesture.name;
 }
 
 // UI Helper Functions
